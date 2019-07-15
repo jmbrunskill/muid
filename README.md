@@ -1,42 +1,55 @@
-# muID - User Readable & Application Specific Unique IDs
+# muID - An open standard for creating Keyed Decentralised Application Specific Unique IDs
 
-In modern cloud based applications and distributed systems, a reliable mechanism of creating unique IDs is required.
-Standards such as RFC4122 Allow software Globally Unique UUIDs with almost 0% chance of a collision. See: (https://tools.ietf.org/html/rfc4122) or (https://en.wikipedia.org/wiki/Universally_unique_identifier)
+Modern cloud based applications and distributed systems demand a reliable and decentralised mechanism for creating unique IDs.
 
-This standard attempts to create a alternative mechanism for creating shorter 64bit ids which might be more useful for application specific purposes.
+The many modern applications utilise a standard such as RFC4122 to generate globally unique ids with almost 0% chance of a collision. 
+See: (https://tools.ietf.org/html/rfc4122) or (https://en.wikipedia.org/wiki/Universally_unique_identifier)
+
+However in many applications, global uniqueness is not critial, and other concerns such as id length and performance concerns become more important.
+
+This standard documents a mechanism for creating key'd 64bit ids which might be more useful for some application specific purposes and a gloabally unique id (GUID/UUID).
 
 ## Why create this?
 
 As a developer working with UUID's can be frustrating and hard to reason about.
 Lets say in your database you have 2 ids `e9bdd14e-a796-11e9-a2a3-2a2ae2dbcce4` and `e9bdd4c8-a796-11e9-a2a3-2a2ae2dbcce4`
 
-If in your debugging code you the id `e9bdd4c8-a796-11e9-a2a3-2a2ae2dbcce4` it's much harder for a developer to differentiate.
+If while debugging code you see the id `e9bdd4c8-a796-11e9-a2a3-2a2ae2dbcce4` it's pretty hard to recognise which one of those 2 ids it is.
 
-With muID's in most cases you'll only have to look at the last 4-6 characters to differentiate ids in context. `5d2cfc97-58-e7-57` vs `5d2cfc98-5d-1d-fe`
+With muID's in normal circumstances you'll only have to look at the last 4-6 characters to differentiate ids in context. `5d2cfc97-58-e7-57` vs `5d2cfc98-5d-1d-fe`
 
-Additionally this format allows you use a normal BIGINT (64bit) datatype in your database, which m your db queries & joins more efficent.
+Additionally this format allows you use a normal BIGINT (64bit) datatype in your database, which may make db queries & joins more efficent.
+AND it reduces the length of the id, which can represent as significant bandwidth consumption in some applications.
 
 ## When *not* to use this
-* If you application is expecting to consistently create 100's or 1000's of ids per second
-* If you have a number of machines or threads generating ids concurrently
+* If your application is expecting to consistently create 100's or 1000's of ids per second
+* If you have a significant number of machines or threads generating ids concurrently
 * If you need to use an internationally recognised standard
+* If you need an ID that's cryptographicly secure
+* If you need a true globally unique id
 
 ## When should I use this?
-* If you have a relatively slow moving application which needs to generate ids without central co-ordination
-* You want an id that's more easily recognised by a human
-* You don't need to generate huge numbers of ids (Libraries may deliberately rate limit id creation)
-* You value shorter id sizes (eg. send less bits across a network etc)
+* Your application needs to generate unique ids without central co-ordination but doesn't need to work at google scale (1000's per second)
+* You have some kind of internal ids or keys that you can use to minimise the chance of a muid being duplicated by different id generators
+* You don't need to generate huge numbers of ids in a short period of time (Libraries may deliberately rate limit id creation to avoid duplication)
+
+You might also want...
+* Ids that are more easily recognised by a human
+* Shorter ids (eg. send less bits across a network)
+* To be able to use BIGINT keys in your SQL Database (for performance or other reasons)
 
 ## Alternatives
 _Have you heard about twitter snowflake or boundry flake?_
-Yes. It's fair to say I was inspired by these types of uuid generators.
+
+Yes, It's fair to say I was inspired by these types of uuid generators.
 However this standard focuses on readability over speed and robustness.
 
 ## Why is is called muID?
-mu stands for the greek letter 'μ' it represents the relative 'smallness' 
+mu stands for the greek letter 'μ' it represents the relative 'smallness'.
+You could think of this as microID but it's 64bit so still not tiny!
 
 ## Is it in production?
-No, not yet. Let me know if you are using this in a production use case?
+No, not yet. Let me know if you are using this in a production use case!
 
 ## The Nitty Gritty
 
@@ -61,7 +74,7 @@ The muID binary format is formed like this:
 A string representation of the muID should be in hex format with '-' characters separating the fields UNIXTIMESTAMP-SOURCEID-ITEMID-SEQ
 Hex Strings should **not** be 0 padded, thus making it easier to read eg. `1d-fe` is easier to read than `1d-00fe`
 
-Examples ID's
+Example muID's
 * `int(6714026395928297728),str(5d2d036f-45-e7-100)`
 * `int(6714026738942017537), str(5d2d03bf-23-1d-1)`
 
@@ -81,4 +94,4 @@ Note: These implementations are provided as examples only. Your own milage my va
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
