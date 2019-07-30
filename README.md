@@ -7,7 +7,7 @@ See: (https://tools.ietf.org/html/rfc4122) or (https://en.wikipedia.org/wiki/Uni
 
 However in many applications, global uniqueness is not critial, and other concerns such as id length and performance concerns become more important.
 
-This standard documents a mechanism for creating key'd 64bit ids which might be more useful for some application specific purposes and a gloabally unique id (GUID/UUID).
+This standard documents a mechanism for creating key'd 64bit ids which might be more useful for some application specific purposes than a globally unique id (GUID/UUID).
 
 ## Why create this?
 
@@ -16,7 +16,7 @@ Lets say in your database you have 2 ids `e9bdd14e-a796-11e9-a2a3-2a2ae2dbcce4` 
 
 If while debugging code you see the id `e9bdd4c8-a796-11e9-a2a3-2a2ae2dbcce4` it's pretty hard to recognise which one of those 2 ids it is.
 
-With muID's in normal circumstances you'll only have to look at the last 4-6 characters to differentiate ids in context. `5d2cfc97-58-e7-57` vs `5d2cfc98-5d-1d-fe`
+With muID's in normal circumstances you'll only have to look at the last 4-6 characters to differentiate ids in context. `115570d-057-1ade7` vs `115570d-fb9-1de01`
 
 Additionally this format allows you use a normal BIGINT (64bit) datatype in your database, which may make db queries & joins more efficent.
 AND it reduces the length of the id, which can represent as significant bandwidth consumption in some applications.
@@ -40,7 +40,6 @@ You might also want...
 
 ## Alternatives
 _Have you heard about twitter snowflake or boundry flake?_
-
 Yes, It's fair to say I was inspired by these types of uuid generators.
 However this standard focuses on readability over speed and robustness.
 
@@ -49,34 +48,35 @@ mu stands for the greek letter 'μ' it represents the relative 'smallness'.
 You could think of this as microID but it's 64bit so still not tiny!
 
 ## Is it in production?
-No, not yet. Let me know if you are using this in a production use case!
+Sort of, this has only been used for batch id generation so far. It's not being used by distributed systems to generate 1000's of ids.
 
 ## The Nitty Gritty
 
 The muID format is formed using optional key'd strings these allow the creator of the id to have some control over how an id is created.
 
 SOURCE_KEY - This is intended to represent a datasource, server, site etc - This should be different for different generation sources
-This key will be hashed and the lower bits of this hash used to create the 8bit SOURCEID.
+This key will be hashed and the lower bits of this hash used to create the 12bit SOURCEID.
 Note: If this is not provided library should substitute some kind of host id (MAC Address for example)
 
 ITEM_KEY - This is intended to represent something likely to be unique about item being identified, eg a Name
-This key will be hashed and the lower bits of this hash used to create the 8bit ITEMID.
+This key will be hashed and the lower bits of this hash used to create the 12bit ITEMID.
 Note: If this is not provided by the caller, a library should substitute some kind of independantly incrementing or random number
 
-The muid generator should keep an incrementing integer in it's internal state. 
-This is known as 'SEQ'
-This allows for up to 65536 id's to be created from the same source in the same second without conflicts.
-A more sophisticated algorithm could keep a seq number per source_id or item_id (or both) potentially allowing even more ids without a conflict. This makes is suitable for batch processing of ids (eg. generating 10000+ of ids per second if they are keyed with a relevent itemid)
+The muid generator should keep an incrementing integer in it's internal state for each source id and itemid combination. 
+This is known as the 'SEQ'
+This allows for a 256 id's to be created in the same second to without generating a duplicated id.
+This per key sequence should be seeded with a random byte to minimise the chance of collision across multiple id producer.
+If a key collision occurs during a key generation session, This number should be incremented. If wrapping this number would cause a duplicated id, it is recommended the libraries pause operation,or simply re-hash the item_key.
+This makes it suitable for batch processing of ids (eg. generating 1000+ of ids per second if they are keyed with a relevent itemid)
 
 The muID binary format is formed like this:
-|<UNIXTIMESTAMP>[32bits]<SOURCEID>[8bits]<ITEMID>[8bits]<SEQ>[16bits]|
+|<UNIXTIMESTAMP>[32bits]-<SOURCEID>[12bits]-<ITEMID>[12bits]<SEQ>[8bits]|
 
-A string representation of the muID should be in hex format with '-' characters separating the fields UNIXTIMESTAMP-SOURCEID-ITEMID-SEQ
-Hex Strings should **not** be 0 padded, thus making it easier to read eg. `1d-fe` is easier to read than `1d-00fe`
+A string representation of the muID should be in hex format with '-' characters separating the fields UNIXTIMESTAMP-SOURCEID-ITEMIDSEQ
 
 Example muID's
-* `int(6714026395928297728),str(5d2d036f-45-e7-100)`
-* `int(6714026738942017537), str(5d2d03bf-23-1d-1)`
+* `int(6714026738942017536),str(115570d-0bf-2a902)`
+* `int(6714026738942017537), str(115570d-0bf-2a901)`
 
 
 ## Is this format resilient against clock drift?
@@ -86,6 +86,7 @@ Not really. We assume that this case is rare, and that the internal seq state wi
 
 Note: These implementations are provided as examples only. Your own milage my vary using these.
 * Python
+* Java
 
 
 ## Authors
